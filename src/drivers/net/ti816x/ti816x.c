@@ -309,7 +309,7 @@ static void emac_queue_reserve(struct emac_desc_queue *qdesc,
 	for (i = 0; i < size; ++i) {
 		skb_extra = skb_extra_alloc();
 		assert(skb_extra != NULL);
-		skb_data = skb_data_alloc();
+		skb_data = skb_data_alloc(skb_max_size());
 		assert(skb_data != NULL);
 
 		hprev = hdesc;
