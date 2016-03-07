@@ -658,7 +658,7 @@ static void ti816x_config(struct net_device *dev) {
 	unsigned char bcast_addr[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 	/* check extra header size */
-	assert(skb_max_extra_size() == sizeof(struct emac_desc_head));
+	assert(skb_extra_max_size() >= sizeof(struct emac_desc_head));
 
 	/* reset EMAC module */
 	emac_reset();
