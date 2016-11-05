@@ -17,9 +17,9 @@
  New VFS prototype
  *****************/
 
-#include <config/embox/fs/dvfs.h>
-#define DENTRY_NAME_LEN   OPTION_MODULE_GET(embox__fs__dvfs, NUMBER, dentry_name_len)
-#define DVFS_MAX_PATH_LEN OPTION_MODULE_GET(embox__fs__dvfs, NUMBER, max_path_len)
+#include <config/embox/fs/dvfs/core.h>
+#define DENTRY_NAME_LEN   OPTION_MODULE_GET(embox__fs__dvfs__core, NUMBER, dentry_name_len)
+#define DVFS_MAX_PATH_LEN OPTION_MODULE_GET(embox__fs__dvfs__core, NUMBER, max_path_len)
 #define FS_NAME_LEN       16
 
 #define DVFS_PATH_FULL     0x001
@@ -207,9 +207,9 @@ extern struct dentry *dvfs_cache_get(char *path, struct lookup *lookup);
 extern int dvfs_cache_del(struct dentry *dentry);
 extern int dvfs_cache_add(struct dentry *dentry);
 
-extern struct super_block *dvfs_alloc_sb(struct dumb_fs_driver *drv, struct file *bdev_file);
+extern struct super_block *dvfs_alloc_sb(const struct dumb_fs_driver *drv, struct file *bdev_file);
 extern int dvfs_destroy_sb(struct super_block *sb);
-extern struct dumb_fs_driver *dumb_fs_driver_find(const char *name);
+extern const struct dumb_fs_driver *dumb_fs_driver_find(const char *name);
 struct super_block *dumb_fs_fill_sb(struct super_block *sb, struct file *bdev);
 
 extern int dvfs_mount(const char *dev, const char *dest, const char *fstype, int flags);

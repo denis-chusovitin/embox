@@ -5,6 +5,7 @@
  * @author: Anton Bondarev
  */
 #include <errno.h>
+#include <sys/mman.h>
 
 #include <util/log.h>
 
@@ -17,6 +18,7 @@
 #include <net/l2/ethernet.h>
 #include <net/netdevice.h>
 #include <net/skbuff.h>
+#include <net/util/show_packet.h>
 
 #include <embox/unit.h>
 
@@ -141,25 +143,6 @@ static void _regdump(void) {
 }
 #endif
 
-#define DEBUG 0
-#if DEBUG
-#include <kernel/printk.h>
-/* Debugging routines */
-static inline void show_packet(uint8_t *raw, int size, char *title) {
-	int i;
-
-	printk("\nPACKET(%d) %s:", size, title);
-	for (i = 0; i < size; i++) {
-		if (!(i % 16)) {
-			printk("\n");
-		}
-		printk(" %02hhX", *(raw + i));
-	}
-	printk("\n.\n");
-}
-#else
-#define show_packet(raw, size,title)
-#endif
 /**
  * @brief Set approprate opcode
  */
@@ -315,6 +298,15 @@ static irq_return_t lan91c111_int_handler(unsigned int irq_num,
 EMBOX_UNIT_INIT(lan91c111_init);
 static int lan91c111_init(void) {
         struct net_device *nic;
+
+	if (NULL == mmap_device_memory(
+		(void*) BANK_BASE_ADDR,
+		0x10,
+		PROT_READ | PROT_WRITE | PROT_NOCACHE,
+		MAP_FIXED,
+		(unsigned long) BANK_BASE_ADDR)) {
+		return -1;
+	}
 
         if (NULL == (nic = etherdev_alloc(0))) {
                 return -ENOMEM;
