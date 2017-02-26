@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+# Check associative arrays support
+[ ${BASH_VERSION:0:1} -ge 4 ] || { echo "Bash 4.0 or later is required"; exit 1; }
 
 DATADIR="$(dirname "$0")"
 CONFDIR=./conf
@@ -72,10 +75,26 @@ get_user_undef_guess AUTOQEMU_AUDIO guess_sound
 
 guessed_info AUTOQEMU_AUDIO_CONFIG "(got)"
 
+
+guess_graphic() {
+	cat $MODS_CONF | gcc -P -E - | sed -n 's#.*include\ embox.driver.video.\([a-z0-9_]\+\)\((.*)\|\)$#\1#p' | head -n 3;
+}
+get_user_undef_guess AUTOQEMU_GRAPHIC guess_graphic
+
+guessed_info AUTOQEMU_GRAPHIC_CONFIG "(got)"
+
+guess_diag() {
+	cat $MODS_CONF | gcc -P -E - | sed -n 's/.*embox.driver.diag*[^"]*"\([^"]*\).*/\1/p' | head -n 1;
+}
+get_user_undef_guess AUTOQEMU_DIAG guess_diag
+
+guessed_info AUTOQEMU_DIAG_CONFIG "(got)"
+
+
 guess_kvm() {
 	ret=""
 	# Build kvm argument
-	if [ $AUTOQEMU_ARCH = "x86" ]; then
+	if [ "$AUTOQEMU_ARCH" = "x86" -a "$OSTYPE" = "linux-gnu" ]; then
 		egrep '(vmx|svm)' /proc/cpuinfo > /dev/null
 		if [ $? -eq 0 ]; then
 			ret="-enable-kvm"
@@ -119,9 +138,6 @@ guess_load_arg() {
 }
 get_user_empty_guess AUTOQEMU_LOAD_ARG guess_load_arg
 
-guess_nographic() { echo "-nographic"; }
-get_user_undef_guess AUTOQEMU_NOGRAPHIC_ARG guess_nographic
-
 guess_machine() {
 	case $AUTOQEMU_ARCH in
 		arm)
@@ -157,7 +173,8 @@ ARCH2QEMU=(
 )
 
 QEMU=${AUTOQEMU_PREFIX}qemu-system-${ARCH2QEMU[$AUTOQEMU_ARCH]:-$AUTOQEMU_ARCH}
-QEMU_VER=$($QEMU --version | sed 's/.*version \([0-9.]\+\).*/\1/;s/\./ /g' | xargs printf "%02d%02d%02d")
+AWK=$(which gawk >/dev/null && echo gawk || echo awk)
+QEMU_VER=$($QEMU --version | $AWK '{ if(match($0,".*version ([0-9.]+).*", m)) {n=split(m[1],a,".");for(i=0;++i<=n;)printf "%02d",a[i]} }')
 
 if [ $QEMU_VER -gt 010200 ]; then
 	MB_XEMACLINE="xlnx.xps-ethernetlite"
@@ -208,6 +225,7 @@ declare -A AUDIO2QEMU
 AUDIO2QEMU=(
 	[intel_ac_pa]="ac97"
 	[es1370]="es1370"
+	[aaci_pl041]="default"
 )
 
 AUDIO_DEV=" " read -a qemu_sound <<< "$AUTOQEMU_AUDIO"
@@ -218,17 +236,54 @@ sound_n=${#qemu_sound[*]}
 if [ $sound_n -gt 0 ]; then
 
 	for so in "${!qemu_sound[@]}"; do
-		sound_model=${AUDIO2QEMU[${qemu_sound[$ni]}]}
+		sound_model=${AUDIO2QEMU[${qemu_sound[$so]}]}
 		echo 
-		if [ ! $sound_model ]; then
-			error "sound model ${qemu_sound[$ni]} is not supported"
+		if [ $sound_model = "default" ]; then
+			sound_lines="$sound_lines"
+		else
+			if [ ! $sound_model ]; then
+				error "sound model ${qemu_sound[$ni]} is not supported"
+			fi
+			sound_lines="$sound_lines -soundhw $sound_model"
 		fi
-
-		sound_lines="$sound_lines -soundhw $sound_model"
 	done
 fi
 
-ARG_LINE="$sudo $QEMU $AUTOQEMU_MACHINE $AUTOQEMU_LOAD_ARG $AUTOQEMU_KVM_ARG -m $AUTOQEMU_MEM $nic_lines $sound_lines ${AUTOQEMU_NOGRAPHIC_ARG--nographic} $@"
+
+#-vga [std|cirrus|vmware|qxl|xenfb|tcx|cg3|none]
+declare -A GRAPHIC2QEMU
+GRAPHIC2QEMU=(
+	[bochs]="std"
+	[cirrus_logic]="cirrus"
+)
+
+qemu_graphic=$(guess_graphic)
+graphic_lines="-nographic"
+graphic_n=${#qemu_graphic[*]}
+if [ $graphic_n -gt 0 ]; then
+	if [ -z "${AUTOQEMU_NOGRAPHIC_ARG+defined}" ]; then
+		for so in $qemu_graphic; do
+			graphic_model=${GRAPHIC2QEMU[$so]}
+			if [ ! $graphic_model ]; then
+				graphic_lines="-nographic"
+			else
+				graphic_lines="-vga $graphic_model -serial stdio"
+				break
+			fi
+		done
+		if [ $graphic_lines = "-nographic" ]; then
+			if [ $(guess_diag) = "embox__driver__console__vc__vga" ]; then
+				graphic_lines="-vga std"
+			fi
+		fi
+
+	else
+		graphic_lines=$AUTOQEMU_NOGRAPHIC_ARG
+	fi	
+
+fi
+
+ARG_LINE="$sudo $QEMU $AUTOQEMU_MACHINE $AUTOQEMU_LOAD_ARG $AUTOQEMU_KVM_ARG -m $AUTOQEMU_MEM $nic_lines $sound_lines $graphic_lines $@"
 
 info "$ARG_LINE"
 $ARG_LINE

@@ -69,9 +69,40 @@ int exec_call(void) {
 
 int execv(const char *path, char *const argv[]) {
 	struct task *task;
+	int i;
+	size_t len;
+	char cmd_name[MAX_TASK_NAME_LEN];
+
 	/* save starting arguments for the task */
 	task = task_self();
 	task_resource_exec(task, path, argv);
+
+	cmd_name[0] = '\0';
+
+	for (i = 0; argv[i] != NULL; i ++) {
+		len = strlen(cmd_name);
+		if (MAX_TASK_NAME_LEN - len - 1 <= 0) {
+			break;
+		}
+		strncat(cmd_name, argv[i], MAX_TASK_NAME_LEN - len - 1);
+		if (argv[i + 1] == NULL) {
+			break;
+		}
+
+		/* this code is required the only if argv is not NULL terminated */
+		if (i >= 3){
+			// TODO for protection from a lot of arguments
+			break;
+		}
+
+		len = strlen(cmd_name);
+		if (MAX_TASK_NAME_LEN - len - 1 <= 0) {
+			break;
+		}
+		strncat(cmd_name, " ", MAX_TASK_NAME_LEN - len - 1);
+	}
+
+	task_set_name(task, cmd_name);
 
 	/* If vforked then unblock parent and start execute new image */
 	vfork_child_done(task, task_exec_callback, NULL);

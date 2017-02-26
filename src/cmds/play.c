@@ -83,7 +83,7 @@ static int fd_callback(const void *inputBuffer, void *outputBuffer,
 int main(int argc, char **argv) {
 	int opt;
 	int err;
-	FILE *fd;
+	FILE *fd = NULL;
 	static uint8_t fmt_buf[128];
 	int chan_n = 2;
 	int sample_rate = 44100;
@@ -143,11 +143,18 @@ int main(int argc, char **argv) {
 		printf("Sample rate:           %d\n", sample_rate);
 		printf("Bits per sample:       %d\n", bits_per_sample);
 		printf("Size of data section:  %d\n", fdata_len);
+
+		if (bits_per_sample * sample_rate * chan_n == 0) {
+			printf("Check bps, sample rate and channel number, they should not be zero!\n");
+			goto err_close_fd;
+		}
+
 		printf("Progress:\n");
 
 		_bl = min(fread(_fbuffer, 1, 64 * 1024 * 1024, fd), _bl);
 		_fchan = chan_n;
 	}
+
 
 	/* Initialize PA */
 	if (paNoError != (err = Pa_Initialize())) {
@@ -201,6 +208,7 @@ err_terminate_pa:
 		printf("Portaudio error: could not terminate!\n");
 
 err_close_fd:
-	fclose(fd);
+	if (fd)
+		fclose(fd);
 	return 0;
 }
