@@ -29,14 +29,6 @@ static inline int soverflow_handler(uint32_t nr, void *data) {
 	return 1;
 }
 
-void *test_func(void *unused) {
-    char c[7000];
-    page = (mmu_vaddr_t)(c - 2000) & ~VMEM_PAGE_MASK;
-    c[-2000] = 1;
-    return NULL;
-}
-
-
 void *rec_func(void *arg) {
     char arr[VMEM_PAGE_SIZE / 4];
 
