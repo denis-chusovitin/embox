@@ -40,12 +40,12 @@ void *rec_func(void *arg) {
     arr[-VMEM_PAGE_SIZE] = 1;
     second_check = exception_flag;
 
-	if (!exception_flag)
-	{
-		rec_func(arg);
-	}
+    if (!exception_flag)
+    {
+    	rec_func(arg);
+    }
 
-	return NULL;
+    return NULL;
 }
 
 TEST_CASE("Stack overflow causes exception") {

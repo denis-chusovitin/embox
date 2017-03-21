@@ -35,7 +35,7 @@ void mmu_pmd_set(mmu_pgd_t *pmd, mmu_pmd_t *pte) {
 
 void mmu_pte_set(mmu_pte_t *pte, mmu_paddr_t addr) {
 	*pte = (mmu_pte_t) ((((uint32_t)addr) & ~MMU_PAGE_MASK)
-			| 0x030 | L1D_TYPE_SD | L1D_B);
+	                | 0x030 | L1D_TYPE_SD | L1D_B);
 }
 
 void mmu_pgd_unset(mmu_pgd_t *pgd) {
@@ -59,11 +59,15 @@ int mmu_pmd_present(mmu_pmd_t *pmd) {
 }
 
 int mmu_pte_present(mmu_pte_t *pte) {
-	return 0;
+	return (((uint32_t)*pte) & ARM_MMU_TYPE_SECTION) == ARM_MMU_TYPE_SECTION;
 }
 
 void mmu_pte_set_writable(mmu_pte_t *pte, int value) {
-
+	if (value & VMEM_PAGE_WRITABLE) {
+		*pte |= 0x0030;
+	} else {
+		*pte &= ~0x0030;
+	}
 }
 
 void mmu_pte_set_cacheable(mmu_pte_t *pte, int value) {

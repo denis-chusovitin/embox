@@ -105,8 +105,7 @@ module thread_wait_stub extends thread_wait {
 	source "thread_wait_stub.h"
 }
 
-
-@DefaultImpl(stack_protect_impl)
+@DefaultImpl(stack_protect_none)
 abstract module stack_protect { }
 
 module stack_protect_impl extends stack_protect {
