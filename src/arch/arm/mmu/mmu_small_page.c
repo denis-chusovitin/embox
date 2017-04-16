@@ -59,7 +59,7 @@ int mmu_pmd_present(mmu_pmd_t *pmd) {
 }
 
 int mmu_pte_present(mmu_pte_t *pte) {
-	return (((uint32_t)*pte) & ARM_MMU_TYPE_SECTION) == ARM_MMU_TYPE_SECTION;
+	return 0;
 }
 
 void mmu_pte_set_writable(mmu_pte_t *pte, int value) {
