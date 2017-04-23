@@ -80,7 +80,7 @@ static inline int readonly_handler(uint32_t nr, void *data) {
 
 	return 1;
 }
-
+/*
 TEST_CASE("Readonly pages shouldn't be written") {
 	exception_flag = 0;
 
@@ -97,7 +97,26 @@ TEST_CASE("Readonly pages shouldn't be written") {
 
 	set_fault_handler(MMU_DATA_MISS, NULL);
 }
+*/
 
+void test_func()
+{
+	exception_flag = -1;
+}
+
+TEST_CASE("Not executable page shouldn't be executable")
+{
+	exception_flag = 0;
+
+	vmem_map_region(ctx, (uintptr_t) page, (uintptr_t) page, VMEM_PAGE_SIZE, 0);
+
+	memcpy(page, test_func, 100);
+	void (*func_pointer)() = (void*)page;
+
+	(*func_pointer)();
+
+	test_assert_equal(exception_flag, -1);
+}
 static int mmu_case_setup(void) {
 	ctx = vmem_current_context();
 	vmem_set_context(ctx);

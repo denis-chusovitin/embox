@@ -85,11 +85,13 @@ void mmu_pte_set_usermode(mmu_pte_t *pte, int value) {
 }
 
 void mmu_pte_set_executable(mmu_pte_t *pte, int value) {
-#if 0
+#if 1
 	if (!(value & VMEM_PAGE_EXECUTABLE)) {
 		*pte |= L1D_XN;
+
 	} else {
 		*pte &= ~L1D_XN;
+
 	}
 #endif
 }
